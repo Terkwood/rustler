@@ -2,6 +2,28 @@ defmodule RustlerTest.ResourceTest do
   use ExUnit.Case, async: true
   use Bitwise
 
+  def incr(ref) do
+    last = RustlerTest.resource_get_integer_field(ref)
+    RustlerTest.resource_set_integer_field(ref, last + 1)
+    last + 1
+  end
+
+  test "mess with passing the reference around" do
+    ref = RustlerTest.resource_make()
+    assert incr(ref) == 1
+    assert incr(ref) == 2
+
+    Task.await(Task.async(fn -> incr(ref) end)) == 3
+    Task.await(Task.async(fn -> incr(ref) end)) == 4
+
+    Task.start(fn -> incr(ref) end)
+    Task.start(fn -> incr(ref) end)
+    Task.start(fn -> incr(ref) end)
+    Task.start(fn -> incr(ref) end)
+    Task.start(fn -> incr(ref) end)
+    Task.await(Task.async(fn -> incr(ref) end)) == 10
+  end
+
   test "resource creation and interaction" do
     resource = RustlerTest.resource_make()
     # A resource looks like an empty binary < OTP20
